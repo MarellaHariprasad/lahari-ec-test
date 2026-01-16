@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GATE EC Mock Test</title>
+<style>
+  body{margin:0;font-family:Arial;background:#f4f6fb}
+  header{background:#0b3c91;color:#fff;padding:12px;text-align:center;font-size:18px}
+  .container{padding:12px}
+  .card{background:#fff;padding:14px;margin-bottom:12px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+  button{background:#0b3c91;color:#fff;border:none;padding:10px 14px;border-radius:6px;cursor:pointer}
+  button.secondary{background:#444}
+  .timer{color:#c00;font-weight:bold;margin-bottom:8px}
+  .option{border:1px solid #ccc;padding:10px;margin:6px 0;border-radius:6px;cursor:pointer}
+  .option.selected{background:#dbe6ff}
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:10px}
+</style>
+</head>
+<body>
+<header>GATE EC – Mock Test (Offline)</header>
+<div class="container" id="app"></div>
+
+<script>
+/* ===================== SUBJECTS + TOPICS ===================== */
+const SYLLABUS = {
+  "GA": { name:"General Aptitude", overview:"Numerical + logical ability for engineering problem solving.",
+    topics:{
+      "Percentages":"Comparison of values with respect to 100.",
+      "Time & Work":"Work-rate and efficiency problems."
+    }
+  }
+};
+
+/* ===================== BULK QUESTIONS (GA STARTER) ===================== */
+const BULK_QUESTIONS = [
+  {subject:"GA",topic:"Percentages",q:"A value increases from 200 to 250. Percentage increase is?",opts:["10%","20%","25%","50%"],ans:2},
+  {subject:"GA",topic:"Percentages",q:"20% of x is 80. Find x.",opts:["200","300","400","500"],ans:2},
+  {subject:"GA",topic:"Percentages",q:"A value decreases from 500 to 450. Percentage decrease is?",opts:["5%","8%","10%","12%"],ans:2},
+  {subject:"GA",topic:"Time & Work",q:"A can finish work in 10 days. Fraction of work done in 1 day?",opts:["1/5","1/10","1/20","1/2"],ans:1},
+  {subject:"GA",topic:"Time & Work",q:"If efficiency doubles, time required becomes?",opts:["Double","Half","Same","Four times"],ans:1},
+];
+
+/* ===================== INDEXEDDB ===================== */
+let db;
+const req = indexedDB.open("GATE_EC_DB", 1);
+
+req.onupgradeneeded = e => {
+  db = e.target.result;
+  const store = db.createObjectStore("questions", { keyPath:"id", autoIncrement:true });
+  store.createIndex("subject","subject",{unique:false});
+  store.createIndex("topic","topic",{unique:false});
+};
+
+req.onsuccess = e => {
+  db = e.target.result;
+  seedDB();
+  home();
+};
+
+function seedDB(){
+  const tx = db.transaction("questions","readwrite");
+  const store = tx.objectStore("questions");
+  store.count().onsuccess = e => {
+    if(e.target.result===0){
+      BULK_QUESTIONS.forEach(q=>{
+        store.add({subject:q.subject,topic:q.topic,question:q.q,options:q.opts,answer:q.ans});
+      });
+    }
+  };
+}
+
+/* ===================== APP STATE ===================== */
+let questions=[], idx=0, answers=[], timer=null, timeLeft=0;
+const app = document.getElementById("app");
+
+/* ===================== UI ===================== */
+function home(){
+  app.innerHTML = `
+    <div class="card">
+      <h3>Select Mode</h3>
+      <button onclick="subjects()">Subject / Topic Practice</button><br><br>
+      <button onclick="fullMock()">Full Mock Test (Mixed)</button>
+    </div>
+  `;
+}
+
+function subjects(){
+  app.innerHTML = "<h3>Select Subject</h3>";
+  for(const s in SYLLABUS){
+    app.innerHTML += `
+      <div class="card">
+        <b>${SYLLABUS[s].name}</b><br>${SYLLABUS[s].overview}<br><br>
+        <button onclick="topics('${s}')">View Topics</button>
+      </div>
+    `;
+  }
+}
+
+function topics(s){
+  app.innerHTML = `<h3>${SYLLABUS[s].name} – Topics</h3>`;
+  for(const t in SYLLABUS[s].topics){
+    app.innerHTML += `
+      <div class="card">
+        <b>${t}</b><br>${SYLLABUS[s].topics[t]}<br><br>
+        <button onclick="topicIntro('${s}','${t}')">Open Topic</button>
+      </div>
+    `;
+  }
+}
+
+function topicIntro(s,t){
+  app.innerHTML = `
+    <div class="card">
+      <h3>${SYLLABUS[s].name} → ${t}</h3>
+      <p>${SYLLABUS[s].topics[t]}</p>
+      <p><b>Ready to start quiz?</b></p>
+      <button onclick="startTopicQuiz('${s}','${t}')">Start Quiz (20 Q)</button>
+      <button class="secondary" onclick="topics('${s}')">Back</button>
+    </div>
+  `;
+}
+
+function startTopicQuiz(s,t){
+  loadQuestions(q=>q.subject===s && q.topic===t, 20);
+}
+
+function fullMock(){
+  loadQuestions(()=>true, 20); // change to 200 later when full bank is added
+}
+
+/* ===================== LOAD QUESTIONS FROM DB ===================== */
+function loadQuestions(filterFn, limit){
+  const tx = db.transaction("questions","readonly");
+  tx.objectStore("questions").getAll().onsuccess = e => {
+    const all = e.target.result;
+    const pool = all.filter(filterFn);
+    pool.sort(()=>Math.random()-0.5);
+    questions = pool.slice(0, Math.min(limit, pool.length));
+    if(questions.length===0){
+      app.innerHTML = `<div class="card"><b>No questions found.</b><br>Add questions for this topic first.</div>`;
+      return;
+    }
+    startQuiz();
+  };
+}
+
+/* ===================== QUIZ ENGINE ===================== */
+function startQuiz(){
+  idx=0;
+  answers = Array(questions.length).fill(null);
+  timeLeft = questions.length * 60;
+
+  if(timer) clearInterval(timer);
+  timer = setInterval(()=>{
+    timeLeft--;
+    if(timeLeft<=0) submit();
+    render();
+  },1000);
+
+  render();
+}
+
+function render(){
+  const q = questions[idx];
+  app.innerHTML = `
+    <div class="timer">Time Left: ${Math.floor(timeLeft/60)}:${String(timeLeft%60).padStart(2,"0")}</div>
+    <div class="card">
+      <b>Q${idx+1}/${questions.length}.</b> ${q.question}<br><br>
+      ${q.options.map((o,i)=>`
+        <div class="option ${answers[idx]===i?'selected':''}" onclick="selectOpt(${i})">${o}</div>
+      `).join("")}
+      <div class="nav">
+        <button onclick="prevQ()">Previous</button>
+        <button onclick="nextQ()">Next</button>
+        <button onclick="submit()">Submit</button>
+      </div>
+    </div>
+  `;
+}
+
+function selectOpt(i){ answers[idx]=i; render(); }
+function prevQ(){ if(idx>0){idx--; render();} }
+function nextQ(){ if(idx<questions.length-1){idx++; render();} }
+
+function submit(){
+  if(timer) clearInterval(timer);
+  let score=0;
+  questions.forEach((q,i)=>{ if(answers[i]===q.answer) score++; });
+
+  app.innerHTML = `
+    <div class="card">
+      <h3>Test Completed</h3>
+      Score: <b>${score}</b> / ${questions.length}<br><br>
+      <button onclick="startQuiz()">Want More Questions?</button><br><br>
+      <button class="secondary" onclick="home()">Go Home</button>
+    </div>
+  `;
+}
+</script>
+</body>
+</html>
