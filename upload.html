@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GA Bulk Upload (Admin)</title>
+
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f5f7fb;
+    }
+
+    .topbar {
+      background: linear-gradient(90deg, #062a62, #0b4ea2);
+      color: white;
+      padding: 18px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 20px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+      margin-bottom: 16px;
+    }
+
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+    }
+
+    .instructions {
+      background: #eaf2ff;
+      border-left: 5px solid #0b4ea2;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 260px;
+      padding: 12px;
+      border-radius: 12px;
+      border: 1px solid #d6d6d6;
+      font-size: 14px;
+      outline: none;
+      resize: vertical;
+      background: #fbfcff;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    button {
+      border: none;
+      padding: 12px 18px;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .btn-primary {
+      background: #0b4ea2;
+      color: white;
+    }
+    .btn-primary:hover {
+      background: #083d81;
+    }
+
+    .btn-dark {
+      background: #0b1320;
+      color: white;
+    }
+    .btn-dark:hover {
+      background: #000;
+    }
+
+    .btn-danger {
+      background: #b00020;
+      color: white;
+    }
+    .btn-danger:hover {
+      background: #7d0016;
+    }
+
+    .status {
+      margin-top: 12px;
+      font-weight: bold;
+      font-size: 14px;
+    }
+
+    .ok {
+      color: #0a7a28;
+    }
+
+    .err {
+      color: #b00020;
+    }
+
+    .small {
+      font-size: 12px;
+      color: #555;
+      margin-top: 6px;
+    }
+
+    code {
+      background: #f1f1f1;
+      padding: 2px 6px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">GA Bulk Upload (Admin)</div>
+
+  <div class="container">
+
+    <div class="card">
+      <h2>Instructions</h2>
+      <div class="instructions">
+        1) Paste <b>JSON array</b> below<br/>
+        2) Click <b>Upload to Firebase</b><br/>
+        3) It will add all docs into Firestore collection: <code>questions</code>
+        <div class="small">
+          Format required:<br/>
+          <code>
+            [{"subject":"GA","topic":"Percentages","question":"...","options":["A","B","C","D"],"answer":0}]
+          </code>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Paste Questions JSON</h2>
+
+      <textarea id="jsonBox" placeholder='[
+  {
+    "subject": "GA",
+    "topic": "Percentages",
+    "question": "If 90% of x is 270, x is:",
+    "options": ["280", "300", "320", "340"],
+    "answer": 1
+  }
+]'></textarea>
+
+      <div class="btn-row">
+        <button class="btn-primary" id="uploadBtn">Upload to Firebase</button>
+        <button class="btn-dark" id="backBtn">Back to App</button>
+        <button class="btn-danger" id="clearBtn">Clear Box</button>
+      </div>
+
+      <div class="status" id="status"></div>
+    </div>
+
+  </div>
+
+  <!-- Firebase Upload Script -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_f6lvDO9LeSE22kv4HIhWLj846bmRla8",
+      authDomain: "gate-ec-mock.firebaseapp.com",
+      projectId: "gate-ec-mock",
+      storageBucket: "gate-ec-mock.firebasestorage.app",
+      messagingSenderId: "668980846025",
+      appId: "1:668980846025:web:a960f983f2e6311fad1c18"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const jsonBox = document.getElementById("jsonBox");
+    const uploadBtn = document.getElementById("uploadBtn");
+    const backBtn = document.getElementById("backBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const statusEl = document.getElementById("status");
+
+    clearBtn.addEventListener("click", () => {
+      jsonBox.value = "";
+      statusEl.innerHTML = "";
+    });
+
+    backBtn.addEventListener("click", () => {
+      window.location.href = "index.html";
+    });
+
+    uploadBtn.addEventListener("click", async () => {
+      statusEl.className = "status";
+      statusEl.innerHTML = "⏳ Uploading...";
+
+      try {
+        const text = jsonBox.value.trim();
+
+        if (!text) {
+          statusEl.className = "status err";
+          statusEl.innerHTML = "❌ Please paste JSON first!";
+          return;
+        }
+
+        const arr = JSON.parse(text);
+
+        if (!Array.isArray(arr)) {
+          statusEl.className = "status err";
+          statusEl.innerHTML = "❌ JSON must be an ARRAY like: [ {...}, {...} ]";
+          return;
+        }
+
+        if (arr.length === 0) {
+          statusEl.className = "status err";
+          statusEl.innerHTML = "❌ JSON array is empty!";
+          return;
+        }
+
+        let added = 0;
+        let skipped = 0;
+
+        for (const q of arr) {
+          const isValid =
+            q &&
+            typeof q.subject === "string" &&
+            typeof q.topic === "string" &&
+            typeof q.question === "string" &&
+            Array.isArray(q.options) &&
+            typeof q.answer === "number";
+
+          if (!isValid) {
+            skipped++;
+            continue;
+          }
+
+          // ✅ IMPORTANT: Auto-ID (no duplicate doc error)
+          await addDoc(collection(db, "questions"), q);
+          added++;
+        }
+
+        statusEl.className = "status ok";
+        statusEl.innerHTML = `✅ Upload Success! Added ${added} questions to Firestore` +
+          (skipped > 0 ? ` | Skipped ${skipped} invalid items` : "");
+
+      } catch (err) {
+        statusEl.className = "status err";
+        statusEl.innerHTML = "❌ Upload failed: " + err.message;
+      }
+    });
+  </script>
+
+</body>
+</html>
