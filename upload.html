@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Firebase Bulk Upload - GATE EC</title>
+
+  <style>
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:#f4f6fb;
+      color:#0f172a;
+    }
+    header{
+      background: linear-gradient(90deg,#0b1f4d,#0f3d91,#1e74ff);
+      color:#fff;
+      padding:14px;
+      font-weight:900;
+      text-align:center;
+      position:sticky;
+      top:0;
+    }
+    .wrap{
+      max-width:900px;
+      margin:18px auto;
+      padding:0 12px 40px;
+    }
+    .card{
+      background:#fff;
+      border-radius:18px;
+      box-shadow: 0 10px 30px rgba(15,23,42,.08);
+      padding:16px;
+      margin-bottom:14px;
+    }
+    label{
+      display:block;
+      font-weight:800;
+      margin:10px 0 6px;
+    }
+    input, select{
+      width:100%;
+      padding:12px;
+      border-radius:14px;
+      border:1px solid #e5e7eb;
+      font-weight:700;
+      outline:none;
+    }
+    button{
+      border:none;
+      cursor:pointer;
+      padding:12px 14px;
+      border-radius:14px;
+      font-weight:900;
+      background:#0f3d91;
+      color:#fff;
+      width:100%;
+      margin-top:12px;
+    }
+    button:active{transform:scale(.98)}
+    .muted{
+      color:#64748b;
+      font-weight:700;
+      font-size:13px;
+      line-height:1.4;
+    }
+    .log{
+      white-space:pre-wrap;
+      background:#0b1220;
+      color:#e5e7eb;
+      padding:12px;
+      border-radius:14px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size:12px;
+      min-height:120px;
+    }
+    .ok{color:#16a34a;font-weight:900}
+    .bad{color:#dc2626;font-weight:900}
+  </style>
+</head>
+
+<body>
+<header>Firebase Bulk Upload (topics / questions)</header>
+
+<div class="wrap">
+
+  <div class="card">
+    <div class="muted">
+      ✅ Upload JSON array into Firestore. <br/>
+      Example: <b>topics</b> collection or <b>questions</b> collection.
+      <br/><br/>
+      ⚠️ JSON must be an <b>array</b> like: <code>[ { ... }, { ... } ]</code>
+    </div>
+  </div>
+
+  <div class="card">
+    <label>Collection Name</label>
+    <select id="collectionName">
+      <option value="topics">topics</option>
+      <option value="questions">questions</option>
+    </select>
+
+    <label>Select JSON File</label>
+    <input type="file" id="fileInput" accept=".json" />
+
+    <button id="uploadBtn">Upload to Firebase</button>
+
+    <div style="margin-top:12px" class="muted">
+      Tip: Upload <b>ga_topics.json</b> to <b>topics</b> first, then upload questions JSON to <b>questions</b>.
+    </div>
+  </div>
+
+  <div class="card">
+    <div style="font-weight:900;margin-bottom:8px;">Upload Log</div>
+    <div class="log" id="logBox">Waiting...</div>
+  </div>
+
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-firestore.js";
+
+  // ✅ Your Firebase Config
+  const firebaseConfig = {
+    apiKey: "AIzaSyC_f6lvDO9LeSE22kv4HIhWLj846bmRla8",
+    authDomain: "gate-ec-mock.firebaseapp.com",
+    projectId: "gate-ec-mock",
+    storageBucket: "gate-ec-mock.firebasestorage.app",
+    messagingSenderId: "668980846025",
+    appId: "1:668980846025:web:a960f983f2e6311fad1c18"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const fileInput = document.getElementById("fileInput");
+  const uploadBtn = document.getElementById("uploadBtn");
+  const logBox = document.getElementById("logBox");
+  const collectionName = document.getElementById("collectionName");
+
+  function log(msg){
+    logBox.textContent += "\n" + msg;
+  }
+
+  uploadBtn.addEventListener("click", async () => {
+    logBox.textContent = "Starting upload...";
+
+    const file = fileInput.files[0];
+    if(!file){
+      log("❌ Please select a JSON file first.");
+      return;
+    }
+
+    const colName = collectionName.value;
+
+    try{
+      const text = await file.text();
+      const data = JSON.parse(text);
+
+      if(!Array.isArray(data)){
+        log("❌ JSON must be an array: [ {..}, {..} ]");
+        return;
+      }
+
+      log(`📌 Uploading ${data.length} documents to collection: ${colName}`);
+
+      let success = 0;
+      let fail = 0;
+
+      for(let i=0;i<data.length;i++){
+        try{
+          await addDoc(collection(db, colName), data[i]);
+          success++;
+          if(success % 10 === 0){
+            log(`✅ Uploaded ${success}/${data.length}`);
+          }
+        }catch(err){
+          fail++;
+          log(`❌ Failed doc ${i+1}: ${err.message}`);
+        }
+      }
+
+      log(`\n✅ DONE! Success: ${success}, Failed: ${fail}`);
+      if(fail === 0) log("🎉 Perfect upload completed!");
+
+    }catch(err){
+      log("❌ ERROR: " + err.message);
+    }
+  });
+</script>
+
+</body>
+</html>
