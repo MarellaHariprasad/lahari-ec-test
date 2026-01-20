@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>GATE EC Mock Test</title>
+
+<style>
+  :root{
+    --blue1:#041a3a;
+    --blue2:#0b3c91;
+    --blue3:#2e7bff;
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --text:#111827;
+    --muted:#6b7280;
+    --danger:#d90429;
+    --ok:#0a7d2f;
+    --shadow:0 10px 30px rgba(0,0,0,.08);
+    --radius:16px;
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--text)}
+
+  header{
+    background:radial-gradient(circle at center, #2e7bff 0%, #0b3c91 45%, #041a3a 100%);
+    color:#fff;
+    padding:14px 14px;
+    position:sticky;
+    top:0;
+    z-index:10;
+    cursor:pointer;
+  }
+
+  .headerWrap{
+    max-width:980px;
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .headerTitle{
+    flex:1;
+    text-align:center;
+    font-weight:800;
+    letter-spacing:.4px;
+    user-select:none;
+  }
+
+  .headerRight{
+    display:flex;
+    gap:8px;
+    align-items:center;
+    justify-content:flex-end;
+    min-width:150px;
+  }
+
+  .headerLeft{
+    min-width:150px;
+  }
+
+  .headerBtn{
+    padding:7px 10px;
+    border-radius:10px;
+    border:none;
+    cursor:pointer;
+    font-weight:800;
+    background:#e7efff;
+    color:#0b3c91;
+    font-size:13px;
+    white-space:nowrap;
+  }
+
+  .container{padding:14px;max-width:980px;margin:0 auto}
+  .card{
+    background:var(--card);
+    padding:14px;
+    margin:12px 0;
+    border-radius:var(--radius);
+    box-shadow:var(--shadow)
+  }
+
+  .row{display:flex;gap:12px;flex-wrap:wrap}
+  .col{flex:1;min-width:220px}
+
+  .btn{
+    background:var(--blue2);
+    color:#fff;
+    border:none;
+    padding:10px 14px;
+    border-radius:12px;
+    cursor:pointer;
+    font-weight:750
+  }
+  .btn:active{transform:scale(.98)}
+  .btn.secondary{background:#111827}
+  .btn.light{background:#e7efff;color:#0b3c91}
+  .btn.danger{background:var(--danger)}
+  .btn.ghost{background:transparent;color:#0b3c91;border:1px solid #c7d2fe}
+
+  .pill{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    background:#eef2ff;
+    color:#3730a3;
+    font-size:12px;
+    font-weight:800
+  }
+
+  .muted{color:var(--muted);font-size:13px;line-height:1.45}
+  .topbar{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+
+  .timer{color:var(--danger);font-weight:900}
+
+  .qbox{font-size:15px;line-height:1.55}
+  .option{
+    border:1px solid #d1d5db;
+    padding:12px;
+    margin:8px 0;
+    border-radius:12px;
+    cursor:pointer;
+    background:#fff
+  }
+  .option.selected{background:#dbe6ff;border-color:#2e7bff}
+
+  .nav{display:flex;justify-content:space-between;gap:10px;margin-top:12px;flex-wrap:wrap}
+
+  .gridQ{
+    display:grid;
+    grid-template-columns:repeat(10, 1fr);
+    gap:6px;
+    margin-top:10px
+  }
+  .qnum{
+    text-align:center;
+    padding:8px;
+    border-radius:10px;
+    background:#f3f4f6;
+    font-weight:800;
+    cursor:pointer;
+    font-size:12px
+  }
+  .qnum.answered{background:#d1fae5}
+  .qnum.current{outline:2px solid #2563eb}
+
+  .loading{display:flex;gap:10px;align-items:center}
+  .dot{width:10px;height:10px;border-radius:50%;background:#2e7bff;animation:b 1s infinite}
+  .dot:nth-child(2){animation-delay:.2s}
+  .dot:nth-child(3){animation-delay:.4s}
+  @keyframes b{0%,100%{opacity:.2}50%{opacity:1}}
+
+  .warn{color:#92400e;background:#fffbeb;border:1px solid #fcd34d;padding:10px;border-radius:12px}
+  .ok{color:var(--ok);font-weight:900}
+  .bad{color:#b91c1c;font-weight:900}
+
+  .small{font-size:12px;color:var(--muted)}
+  .hr{height:1px;background:#e5e7eb;margin:12px 0;border-radius:99px}
+
+  @media(max-width:480px){
+    .headerLeft{min-width:90px}
+    .headerRight{min-width:90px}
+    .headerBtn{font-size:12px;padding:6px 8px}
+  }
+</style>
+</head>
+
+<body>
+
+<header onclick="event.stopPropagation(); window.__goHome()">
+  <div class="headerWrap">
+    <div class="headerLeft"></div>
+    <div class="headerTitle">GATE EC – Mock Test</div>
+    <div class="headerRight">
+      <button class="headerBtn" onclick="event.stopPropagation(); window.__dashboard()">Dashboard</button>
+      <button id="authBtn" class="headerBtn" onclick="event.stopPropagation(); window.__login()">Login</button>
+    </div>
+  </div>
+</header>
+
+<div class="container" id="app"></div>
+
+<script type="module">
+  // ===================== Firebase Imports =====================
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-app.js";
+  import {
+    getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-auth.js";
+  import {
+    getFirestore, collection, getDocs, query, where, limit, addDoc, orderBy
+  } from "https://www.gstatic.com/firebasejs/12.8.0/firebase-firestore.js";
+
+  // ===================== Firebase Config =====================
+  const firebaseConfig = {
+    apiKey: "AIzaSyC_f6lvDO9LeSE22kv4HIhWLj846bmRla8",
+    authDomain: "gate-ec-mock.firebaseapp.com",
+    projectId: "gate-ec-mock",
+    storageBucket: "gate-ec-mock.firebasestorage.app",
+    messagingSenderId: "668980846025",
+    appId: "1:668980846025:web:a960f983f2e6311fad1c18"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const auth = getAuth(firebaseApp);
+  const db = getFirestore(firebaseApp);
+  const provider = new GoogleAuthProvider();
+
+  // ===================== UI ROOT =====================
+  const app = document.getElementById("app");
+
+  // ===================== NAV STACK (Back Button Fix) =====================
+  const NAV = {
+    stack: [],
+    push(pageFn, state){
+      NAV.stack.push({pageFn, state});
+      history.pushState({nav:true}, "");
+      pageFn(state);
+    },
+    back(){
+      if(NAV.stack.length > 1){
+        NAV.stack.pop();
+        const last = NAV.stack[NAV.stack.length-1];
+        last.pageFn(last.state);
+      } else {
+        NAV.stack = [];
+        home();
+      }
+    }
+  };
+
+  window.addEventListener("popstate", ()=>{
+    NAV.back();
+  });
+
+  // ===================== GLOBAL USER =====================
+  let currentUser = null;
+
+  // ===================== SUBJECT LIST =====================
+  const SUBJECTS = [
+    { code:"GA", name:"General Aptitude" },
+    { code:"EM", name:"Engineering Mathematics" },
+    { code:"NT", name:"Network Theory" },
+    { code:"SS", name:"Signals & Systems" },
+    { code:"EDC", name:"Electronic Devices" },
+    { code:"AN", name:"Analog Circuits" },
+    { code:"DI", name:"Digital Circuits" },
+    { code:"CS", name:"Control Systems" },
+    { code:"CO", name:"Communications" },
+    { code:"EMFT", name:"EMFT" }
+  ];
+
+  // ===================== FRONTEND SUBTOPICS (Hardcoded) =====================
+  const SUBTOPICS_MAP = {
+    GA: {
+      "Percentages": [
+        "Percentage basics",
+        "Increase / Decrease",
+        "Successive percentage change",
+        "Percentage comparison",
+        "Applications in profit/loss & discount"
+      ],
+      "Ratio & Proportion": [
+        "Basics of ratio and simplification",
+        "Proportion and continued proportion",
+        "Divide a quantity in a given ratio",
+        "Direct and inverse proportion",
+        "Partnership / profit sharing",
+        "Mixtures and alligation (basic)",
+        "Scaling and comparison problems"
+      ],
+      "Averages": [
+        "Arithmetic mean basics",
+        "Combined average",
+        "Weighted average",
+        "Average after adding/removing/replacing values",
+        "Average speed (basic)",
+        "Age based average problems"
+      ],
+      "Time & Work": [
+        "Work-rate concept",
+        "Efficiency comparison",
+        "Combined work",
+        "Work with breaks",
+        "Pipes and cisterns (basic)",
+        "Work distribution problems"
+      ],
+      "Time, Speed & Distance": [
+        "Speed = Distance / Time",
+        "Average speed",
+        "Relative speed",
+        "Trains problems",
+        "Boats and streams",
+        "Meeting and crossing problems"
+      ],
+      "Profit & Loss": [
+        "Cost price & selling price",
+        "Profit/Loss percentage",
+        "Discount and marked price",
+        "Successive discount",
+        "SP/CP based word problems"
+      ],
+      "Simple Interest": [
+        "SI formula",
+        "Principal, Rate, Time relations",
+        "Time period conversion",
+        "Comparison problems"
+      ],
+      "Compound Interest": [
+        "CI formula",
+        "Yearly/half-yearly compounding",
+        "Growth and depreciation",
+        "Difference between CI and SI"
+      ],
+      "Probability": [
+        "Basic probability",
+        "Complementary events",
+        "Independent events (basic)",
+        "Simple counting"
+      ],
+      "Permutation & Combination": [
+        "Factorial basics",
+        "Permutations",
+        "Combinations",
+        "Arrangement/selection problems"
+      ],
+      "Data Interpretation": [
+        "Tables",
+        "Bar graphs",
+        "Pie charts",
+        "Fast calculations"
+      ],
+      "Logical Reasoning": [
+        "Statements & conclusions",
+        "Blood relations",
+        "Seating arrangement (basic)",
+        "Number/letter patterns"
+      ]
+    }
+  };
+
+  // ===================== APP STATE =====================
+  let currentMode = "home"; // full | subject | topic
+  let selectedSubject = null;
+  let selectedTopic = null;
+
+  let questions = [];
+  let idx = 0;
+  let answers = [];
+  let timer = null;
+  let timeLeft = 0;
+
+  // ===================== HELPERS =====================
+  function shuffle(arr){
+    const a = [...arr];
+    for(let i=a.length-1;i>0;i--){
+      const j = Math.floor(Math.random()*(i+1));
+      [a[i],a[j]] = [a[j],a[i]];
+    }
+    return a;
+  }
+
+  function showLoading(msg="Loading..."){
+    app.innerHTML = `
+      <div class="card">
+        <div class="loading">
+          <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+          <div><b>${msg}</b><div class="muted">Please wait...</div></div>
+        </div>
+      </div>
+    `;
+  }
+
+  function formatTime(sec){
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec%60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
+
+  function stopTimer(){
+    if(timer) clearInterval(timer);
+    timer = null;
+  }
+
+  // ===================== HEADER AUTH BUTTON =====================
+  function renderHeader(){
+    const btn = document.getElementById("authBtn");
+    if(!btn) return;
+    if(currentUser){
+      btn.innerText = "Logout";
+      btn.onclick = (e)=>{ e.stopPropagation(); logout(); };
+    } else {
+      btn.innerText = "Login";
+      btn.onclick = (e)=>{ e.stopPropagation(); login(); };
+    }
+  }
+
+  // ===================== AUTH =====================
+  async function login(){
+    try{
+      await signInWithPopup(auth, provider);
+    } catch(err){
+      alert("Login failed: " + err.message);
+    }
+  }
+
+  async function logout(){
+    try{
+      await signOut(auth);
+    } catch(err){
+      alert("Logout failed: " + err.message);
+    }
+  }
+
+  onAuthStateChanged(auth, (user)=>{
+    currentUser = user;
+    renderHeader();
+  });
+
+  // ===================== ATTEMPTS STORAGE =====================
+  async function saveAttemptCloud(data){
+    if(!currentUser) return false;
+    try{
+      const attemptsRef = collection(db, "users", currentUser.uid, "attempts");
+      await addDoc(attemptsRef, data);
+      return true;
+    } catch(e){
+      console.log("Cloud save error:", e);
+      return false;
+    }
+  }
+
+  async function loadAttemptsCloud(){
+    if(!currentUser) return [];
+    const attemptsRef = collection(db, "users", currentUser.uid, "attempts");
+    const qref = query(attemptsRef, orderBy("time","desc"), limit(50));
+    const snap = await getDocs(qref);
+    return snap.docs.map(d=>d.data());
+  }
+
+  function saveAttemptLocal(data){
+    const history = JSON.parse(localStorage.getItem("gate_history") || "[]");
+    history.push(data);
+    localStorage.setItem("gate_history", JSON.stringify(history));
+  }
+
+  function loadAttemptsLocal(){
+    return JSON.parse(localStorage.getItem("gate_history") || "[]").reverse().slice(0,50);
+  }
+
+  // ===================== FIRESTORE FETCH =====================
+  async function fetchTopicsBySubject(subjectCode){
+    const colRef = collection(db, "topics");
+    const qRef = query(colRef, where("subject","==",subjectCode), limit(200));
+    const snap = await getDocs(qRef);
+
+    const list = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(typeof d.topic === "string"){
+        list.push({
+          topic: d.topic,
+          overview: typeof d.overview === "string" ? d.overview : "Overview not added yet.",
+          subtopics: Array.isArray(d.subtopics) ? d.subtopics : []
+        });
+      }
+    });
+
+    return list.sort((a,b)=>a.topic.localeCompare(b.topic));
+  }
+
+  async function fetchQuestions({subject=null, topic=null, maxCount=20}){
+    const colRef = collection(db, "questions");
+    let qRef;
+
+    if(subject && topic){
+      qRef = query(colRef,
+        where("subject","==",subject),
+        where("topic","==",topic),
+        limit(2000)
+      );
+    } else if(subject){
+      qRef = query(colRef,
+        where("subject","==",subject),
+        limit(3000)
+      );
+    } else {
+      qRef = query(colRef, limit(5000));
+    }
+
+    const snap = await getDocs(qRef);
+
+    const all = [];
+    snap.forEach(doc=>{
+      const d = doc.data();
+      if(
+        typeof d.subject === "string" &&
+        typeof d.topic === "string" &&
+        typeof d.question === "string" &&
+        Array.isArray(d.options) &&
+        typeof d.answer === "number"
+      ){
+        all.push({
+          id: doc.id,
+          subject: d.subject,
+          topic: d.topic,
+          question: d.question,
+          options: d.options,
+          answer: d.answer,
+          marks: (d.marks === 2 ? 2 : 1)
+        });
+      }
+    });
+
+    return shuffle(all).slice(0, Math.min(maxCount, all.length));
+  }
+
+  // ===================== MARKING =====================
+  function calcMarks(q, chosenIndex){
+    if(chosenIndex === null) return 0;
+    if(chosenIndex === q.answer) return q.marks;
+    if(q.marks === 2) return -0.66;
+    return -0.33;
+  }
+
+  // ===================== PAGES =====================
+  function home(){
+    stopTimer();
+    currentMode = "home";
+    selectedSubject = null;
+    selectedTopic = null;
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <div class="pill">Beginner Friendly</div>
+            <h2 style="margin:10px 0 6px 0;">GATE EC Mock Test</h2>
+            <div class="muted">
+              ${currentUser
+                ? `Logged in as <b>${currentUser.email}</b> (Cloud tracking enabled)`
+                : `Guest Mode (Local tracking). Login to save progress online.`
+              }
+            </div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="card" style="margin:0">
+          <h3 style="margin:0 0 6px 0;">Write the Test (Full Mock)</h3>
+          <div class="muted">Real exam mode: <b>65 Questions</b> • <b>3 Hours</b> • GATE marking scheme.</div>
+          <div style="margin-top:10px">
+            <button class="btn" onclick="window.__fullDisclaimer()">Write the Test</button>
+          </div>
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <div class="col card" style="margin:0">
+            <h3 style="margin:0 0 6px 0;">Practice by Subject / Topic</h3>
+            <div class="muted">Pick subject → test (50Q) OR pick topic → choose 20Q/50Q.</div><br/>
+            <button class="btn light" onclick="window.__subjects()">Start Practice</button>
+          </div>
+
+          <div class="col card" style="margin:0">
+            <h3 style="margin:0 0 6px 0;">Dashboard</h3>
+            <div class="muted">Track attempts, accuracy and best score.</div><br/>
+            <button class="btn light" onclick="window.__dashboard()">Open Dashboard</button>
+          </div>
+        </div>
+
+        <div class="warn" style="margin-top:12px">
+          <b>Note:</b> Questions load from Firebase Firestore.
+          If a topic has less questions in DB, you will get less questions.
+        </div>
+      </div>
+    `;
+  }
+
+  function fullDisclaimer(){
+    stopTimer();
+    app.innerHTML = `
+      <div class="card">
+        <div class="pill">Full Mock Test</div>
+        <h2 style="margin:10px 0 6px 0;">Disclaimer</h2>
+        <div class="muted">
+          This test is designed to simulate a real GATE environment.<br/><br/>
+          <b>Time:</b> 3 Hours<br/>
+          <b>Questions:</b> 65<br/>
+          <b>Marking:</b> 1-mark & 2-mark MCQs with negative marking<br/>
+          <span class="small">1-mark wrong = -0.33, 2-mark wrong = -0.66</span>
+        </div>
+
+        <div class="warn" style="margin-top:12px">
+          During the exam, correct/wrong answers will NOT be shown.
+          After finishing, you can choose to review wrong answers.
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn" onclick="window.__startFullMock()">Start Full Test</button>
+          <button class="btn secondary" onclick="window.__goHome()">Back</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function subjects(){
+    stopTimer();
+    let html = `
+      <div class="card">
+        <h2 style="margin:0 0 6px 0;">Select Subject</h2>
+        <div class="muted">Choose subject → subject test (50Q) OR open topics.</div>
+      </div>
+    `;
+
+    SUBJECTS.forEach(s=>{
+      html += `
+        <div class="card">
+          <div class="topbar">
+            <div>
+              <b>${s.name}</b> <span class="pill">${s.code}</span>
+              <div class="muted">Subject-wise test contains mixed questions from all topics.</div>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <button class="btn light" onclick="window.__subjectConfirm('${s.code}','${s.name.replaceAll("'","")}')">Subject Test</button>
+              <button class="btn" onclick="window.__topics('${s.code}','${s.name.replaceAll("'","")}')">View Topics</button>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    html += `<button class="btn secondary" onclick="window.__goHome()">Back</button>`;
+    app.innerHTML = html;
+  }
+
+  function subjectConfirm(code, name){
+    selectedSubject = code;
+    selectedTopic = null;
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="pill">Subject Test</div>
+        <h2 style="margin:10px 0 6px 0;">${name} (${code})</h2>
+        <div class="muted">
+          Do you want to write a test on this subject?<br/>
+          <b>Questions:</b> 50 (mixed topics)<br/>
+          <b>Marking:</b> GATE style (negative marking)
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn" onclick="window.__startSubjectTest('${code}')">Start Subject Test</button>
+          <button class="btn secondary" onclick="window.__subjects()">Back</button>
+        </div>
+      </div>
+    `;
+  }
+
+  async function topics(code, name){
+    selectedSubject = code;
+    selectedTopic = null;
+
+    showLoading("Loading topics from Firebase...");
+
+    try{
+      const list = await fetchTopicsBySubject(code);
+
+      let html = `
+        <div class="card">
+          <h2 style="margin:0 0 6px 0;">${name} <span class="pill">${code}</span></h2>
+          <div class="muted">Select a topic to read overview and start quiz.</div>
+        </div>
+      `;
+
+      if(list.length === 0){
+        html += `
+          <div class="card">
+            <div class="warn">
+              No topics found in Firebase for <b>${code}</b>.<br/>
+              Add topic docs in <b>topics</b> collection with fields: subject, topic, overview.
+            </div>
+          </div>
+        `;
+      } else {
+        list.forEach(t=>{
+          html += `
+            <div class="card">
+              <b>${t.topic}</b>
+              <div class="muted" style="margin-top:6px">${t.overview || "Overview not added yet."}</div>
+              <div style="margin-top:10px">
+                <button class="btn" onclick="window.__topicIntro('${code}','${t.topic.replaceAll("'","")}')">Open Topic</button>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      html += `<button class="btn secondary" onclick="window.__subjects()">Back</button>`;
+      app.innerHTML = html;
+    } catch(err){
+      app.innerHTML = `
+        <div class="card">
+          <h3>Error loading topics ❌</h3>
+          <div class="warn">${String(err)}</div>
+          <button class="btn secondary" onclick="window.__subjects()">Back</button>
+        </div>
+      `;
+    }
+  }
+
+  async function topicIntro(code, topic){
+    selectedSubject = code;
+    selectedTopic = topic;
+
+    showLoading("Loading topic details...");
+
+    try{
+      const list = await fetchTopicsBySubject(code);
+      const found = list.find(x=>x.topic === topic);
+
+      const overview = found?.overview || "Overview not added yet.";
+
+      // Prefer Firebase subtopics if present, else frontend hardcoded
+      const subtopicsFromFirebase = Array.isArray(found?.subtopics) ? found.subtopics : [];
+      const subtopicsFromFrontend = SUBTOPICS_MAP?.[code]?.[topic] || [];
+      const subtopics = subtopicsFromFirebase.length ? subtopicsFromFirebase : subtopicsFromFrontend;
+
+      app.innerHTML = `
+        <div class="card">
+          <div class="pill">Topic</div>
+          <h2 style="margin:10px 0 6px 0;">${code} → ${topic}</h2>
+          <div class="muted">${overview}</div>
+
+          <div class="hr"></div>
+
+          <b>Subtopics</b>
+          <div class="muted" style="margin-top:6px">
+            ${subtopics.length ? `<ul style="margin:6px 0 0 18px">${subtopics.map(s=>`<li>${s}</li>`).join("")}</ul>` : "Subtopics coming soon."}
+          </div>
+
+          <div class="warn" style="margin-top:12px">
+            Choose question count to start practice.
+          </div>
+
+          <div style="margin-top:12px" class="row">
+            <button class="btn" onclick="window.__topicCount('${code}','${topic.replaceAll("'","")}')">Start Topic Test</button>
+            <button class="btn secondary" onclick="window.__topics('${code}','${SUBJECTS.find(s=>s.code===code)?.name || code}')">Back</button>
+          </div>
+        </div>
+      `;
+    } catch(err){
+      app.innerHTML = `
+        <div class="card">
+          <h3>Error ❌</h3>
+          <div class="warn">${String(err)}</div>
+          <button class="btn secondary" onclick="window.__subjects()">Back</button>
+        </div>
+      `;
+    }
+  }
+
+  function topicCount(code, topic){
+    selectedSubject = code;
+    selectedTopic = topic;
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="pill">Topic Test</div>
+        <h2 style="margin:10px 0 6px 0;">${code} → ${topic}</h2>
+        <div class="muted">Select question count:</div>
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn" onclick="window.__startTopicTest('${code}','${topic.replaceAll("'","")}',20)">20 Questions</button>
+          <button class="btn light" onclick="window.__startTopicTest('${code}','${topic.replaceAll("'","")}',50)">50 Questions</button>
+          <button class="btn secondary" onclick="window.__topicIntro('${code}','${topic.replaceAll("'","")}')">Back</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===================== QUIZ ENGINE =====================
+  function startQuiz({fixedSeconds=null}){
+    idx = 0;
+    answers = Array(questions.length).fill(null);
+
+    stopTimer();
+
+    if(fixedSeconds !== null){
+      timeLeft = fixedSeconds;
+    } else {
+      timeLeft = questions.length * 60;
+    }
+
+    timer = setInterval(()=>{
+      timeLeft--;
+      if(timeLeft <= 0){
+        submitExam(true);
+      } else {
+        renderQuiz();
+      }
+    }, 1000);
+
+    renderQuiz();
+  }
+
+  function renderQuiz(){
+    const q = questions[idx];
+
+    const sideGrid = questions.map((_,i)=>{
+      const answered = answers[i] !== null;
+      return `<div class="qnum ${answered?'answered':''} ${i===idx?'current':''}" onclick="window.__jump(${i})">${i+1}</div>`;
+    }).join("");
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="topbar">
+          <div>
+            <div class="pill">GATE Exam Mode</div>
+            <div class="muted">
+              ${currentMode==="topic"
+                ? `Topic Test: <b>${selectedSubject}</b> → <b>${selectedTopic}</b>`
+                : currentMode==="subject"
+                  ? `Subject Test: <b>${selectedSubject}</b> (50Q)`
+                  : `Full Mock Test (65Q)`
+              }
+            </div>
+          </div>
+          <div class="timer">⏳ ${formatTime(timeLeft)}</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="col" style="flex:2">
+          <div class="card">
+            <div class="qbox">
+              <b>Q${idx+1}/${questions.length}.</b>
+              <span class="pill" style="margin-left:6px">${q.marks} Mark</span>
+              <div style="margin-top:8px">${q.question}</div>
+            </div>
+
+            <div style="margin-top:10px">
+              ${q.options.map((o,i)=>`
+                <div class="option ${answers[idx]===i?'selected':''}" onclick="window.__select(${i})">
+                  ${o}
+                </div>
+              `).join("")}
+            </div>
+
+            <div class="nav">
+              <button class="btn light" onclick="window.__prev()">Previous</button>
+              <button class="btn light" onclick="window.__next()">Next</button>
+              <button class="btn danger" onclick="window.__submit()">Submit</button>
+            </div>
+
+            <div class="small" style="margin-top:10px">
+              No correct/wrong will be shown during the exam.
+            </div>
+          </div>
+        </div>
+
+        <div class="col" style="flex:1;min-width:260px">
+          <div class="card">
+            <b>Question Palette</b>
+            <div class="muted">Green = answered</div>
+            <div class="gridQ">${sideGrid}</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function selectOpt(i){ answers[idx] = i; renderQuiz(); }
+  function prevQ(){ if(idx>0){ idx--; renderQuiz(); } }
+  function nextQ(){ if(idx<questions.length-1){ idx++; renderQuiz(); } }
+  function jump(i){ idx=i; renderQuiz(); }
+
+  async function submitExam(auto=false){
+    stopTimer();
+
+    let correct=0, wrong=0, unattempted=0;
+    let totalMarks=0;
+    let obtainedMarks=0;
+
+    questions.forEach((q,i)=>{
+      totalMarks += q.marks;
+      const chosen = answers[i];
+
+      if(chosen === null){
+        unattempted++;
+      } else if(chosen === q.answer){
+        correct++;
+      } else {
+        wrong++;
+      }
+
+      obtainedMarks += calcMarks(q, chosen);
+    });
+
+    obtainedMarks = Math.round(obtainedMarks * 100) / 100;
+    const accuracy = (correct + wrong) > 0 ? Math.round((correct/(correct+wrong))*100) : 0;
+
+    const attemptData = {
+      time: Date.now(),
+      mode: currentMode === "topic"
+        ? `Topic Test (${selectedSubject} - ${selectedTopic})`
+        : currentMode === "subject"
+          ? `Subject Test (${selectedSubject})`
+          : "Full Mock Test",
+      correct,
+      wrong,
+      unattempted,
+      obtainedMarks,
+      totalMarks,
+      accuracy
+    };
+
+    if(currentUser){
+      await saveAttemptCloud(attemptData);
+    } else {
+      saveAttemptLocal(attemptData);
+    }
+
+    app.innerHTML = `
+      <div class="card">
+        <h2 style="margin:0 0 6px 0;">Test Completed ✅</h2>
+        <div class="muted">${auto ? "Time up! Auto-submitted." : "Submitted successfully."}</div>
+
+        <div class="hr"></div>
+
+        <div style="font-size:18px">
+          <b>Marks:</b> ${obtainedMarks} / ${totalMarks}
+        </div>
+
+        <div style="margin-top:8px" class="muted">
+          <b>Correct:</b> ${correct} &nbsp; | &nbsp;
+          <b>Wrong:</b> ${wrong} &nbsp; | &nbsp;
+          <b>Unattempted:</b> ${unattempted}
+          <br/>
+          <b>Accuracy:</b> ${accuracy}%
+        </div>
+
+        <div class="warn" style="margin-top:12px">
+          Do you want to review wrong answers now?
+        </div>
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn" onclick="window.__reviewWrong()">Yes, Review Wrong</button>
+          <button class="btn light" onclick="window.__more()">Want More Questions</button>
+          <button class="btn secondary" onclick="window.__goHome()">Home</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function reviewWrong(){
+    const wrongList = [];
+    questions.forEach((q,i)=>{
+      const chosen = answers[i];
+      if(chosen !== null && chosen !== q.answer){
+        wrongList.push({q,i,chosen});
+      }
+    });
+
+    if(wrongList.length === 0){
+      app.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px 0;">Review</h2>
+          <div class="ok">No wrong answers 🎉</div>
+          <div class="muted">Great job! Try more questions for practice.</div>
+          <div style="margin-top:12px" class="row">
+            <button class="btn" onclick="window.__more()">Want More Questions</button>
+            <button class="btn secondary" onclick="window.__goHome()">Home</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    app.innerHTML = `
+      <div class="card">
+        <div class="pill">Review Wrong Answers</div>
+        <h2 style="margin:10px 0 6px 0;">Wrong Questions (${wrongList.length})</h2>
+        <div class="muted">Red = your answer, Green = correct answer.</div>
+      </div>
+
+      ${wrongList.map(({q,i,chosen})=>{
+        return `
+          <div class="card">
+            <div class="qbox">
+              <b>Q${i+1}.</b> ${q.question}
+              <span class="pill" style="margin-left:6px">${q.marks} Mark</span>
+            </div>
+            <div style="margin-top:10px">
+              ${q.options.map((o,oi)=>{
+                const isChosen = (oi===chosen);
+                const isCorrect = (oi===q.answer);
+                const style = isCorrect
+                  ? 'border-color:#16a34a;background:#dcfce7'
+                  : isChosen
+                    ? 'border-color:#dc2626;background:#fee2e2'
+                    : '';
+                return `<div class="option" style="${style}">${o}</div>`;
+              }).join("")}
+            </div>
+          </div>
+        `;
+      }).join("")}
+
+      <div class="card">
+        <div class="row">
+          <button class="btn" onclick="window.__more()">Want More Questions</button>
+          <button class="btn secondary" onclick="window.__goHome()">Home</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===================== DASHBOARD =====================
+  async function dashboard(){
+    stopTimer();
+    showLoading("Loading dashboard...");
+
+    let attempts = [];
+    try{
+      attempts = currentUser ? await loadAttemptsCloud() : loadAttemptsLocal();
+    } catch(e){
+      attempts = loadAttemptsLocal();
+    }
+
+    if(attempts.length === 0){
+      app.innerHTML = `
+        <div class="card">
+          <h2 style="margin:0 0 6px 0;">Dashboard</h2>
+          <div class="muted">No attempts found yet.</div>
+          <div style="margin-top:12px">
+            <button class="btn" onclick="window.__goHome()">Home</button>
+          </div>
+        </div>
+      `;
+      return;
+    }
+
+    const total = attempts.length;
+    const avg = Math.round((attempts.reduce((a,x)=>a+(x.accuracy||0),0)/total) * 10)/10;
+    const best = Math.max(...attempts.map(x=>x.accuracy||0));
+
+    app.innerHTML = `
+      <div class="card">
+        <h2 style="margin:0 0 6px 0;">Dashboard</h2>
+        <div class="muted">${currentUser ? `Cloud tracking: <b>${currentUser.email}</b>` : `Guest mode tracking (LocalStorage)`}</div>
+
+        <div class="hr"></div>
+
+        <div class="row">
+          <div class="col card" style="margin:0">
+            <b>Total Attempts</b>
+            <div style="font-size:22px;margin-top:6px"><b>${total}</b></div>
+            <div class="muted">Avg Accuracy: <b>${avg}%</b></div>
+            <div class="muted">Best Accuracy: <b>${best}%</b></div>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <b>Recent Attempts</b>
+        ${attempts.slice(0,10).map(a=>{
+          const dt = new Date(a.time || Date.now());
+          return `
+            <div class="card" style="margin-top:10px">
+              <b>${a.mode || "Test"}</b>
+              <div class="muted">${dt.toLocaleString()}</div>
+              <div style="margin-top:6px">
+                <b>Marks:</b> ${(a.obtainedMarks ?? 0)} / ${(a.totalMarks ?? 0)}
+                &nbsp; | &nbsp; <b>Accuracy:</b> ${(a.accuracy ?? 0)}%
+              </div>
+            </div>
+          `;
+        }).join("")}
+
+        <div style="margin-top:12px" class="row">
+          <button class="btn" onclick="window.__goHome()">Home</button>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===================== STARTERS =====================
+  async function startFullMock(){
+    currentMode = "full";
+    selectedSubject = null;
+    selectedTopic = null;
+
+    showLoading("Loading Full Mock (65 questions) from Firebase...");
+
+    const fetched = await fetchQuestions({subject:null, topic:null, maxCount:65});
+    questions = fetched;
+
+    if(questions.length === 0){
+      app.innerHTML = `
+        <div class="card">
+          <h3>No questions found ❌</h3>
+          <div class="warn">Add questions in Firestore collection <b>questions</b>.</div>
+          <button class="btn secondary" onclick="window.__goHome()">Home</button>
+        </div>
+      `;
+      return;
+    }
+
+    startQuiz({fixedSeconds: 3*60*60});
+  }
+
+  async function startSubjectTest(code){
+    currentMode = "subject";
+    selectedSubject = code;
+    selectedTopic = null;
+
+    showLoading("Loading Subject Test (50 questions) from Firebase...");
+
+    const fetched = await fetchQuestions({subject:code, topic:null, maxCount:50});
+    questions = fetched;
+
+    if(questions.length === 0){
+      app.innerHTML = `
+        <div class="card">
+          <h3>No questions found ❌</h3>
+          <div class="warn">Add questions for subject <b>${code}</b> in Firestore.</div>
+          <button class="btn secondary" onclick="window.__subjects()">Back</button>
+        </div>
+      `;
+      return;
+    }
+
+    startQuiz({fixedSeconds:null});
+  }
+
+  async function startTopicTest(code, topic, count){
+    currentMode = "topic";
+    selectedSubject = code;
+    selectedTopic = topic;
+
+    showLoading(`Loading Topic Test (${count} questions) from Firebase...`);
+
+    const fetched = await fetchQuestions({subject:code, topic:topic, maxCount:count});
+    questions = fetched;
+
+    if(questions.length === 0){
+      app.innerHTML = `
+        <div class="card">
+          <h3>No questions found ❌</h3>
+          <div class="warn">Add questions for <b>${code}</b> → <b>${topic}</b> in Firestore.</div>
+          <button class="btn secondary" onclick="window.__topicIntro('${code}','${topic.replaceAll("'","")}')">Back</button>
+        </div>
+      `;
+      return;
+    }
+
+    startQuiz({fixedSeconds:null});
+  }
+
+  async function moreQuestions(){
+    if(currentMode === "full") return startFullMock();
+    if(currentMode === "subject") return startSubjectTest(selectedSubject);
+    if(currentMode === "topic"){
+      const count = questions.length || 20;
+      return startTopicTest(selectedSubject, selectedTopic, count);
+    }
+    home();
+  }
+
+  // ===================== WINDOW BINDINGS =====================
+  window.__goHome = ()=>{ NAV.stack=[]; home(); };
+  window.__fullDisclaimer = ()=> NAV.push(()=>fullDisclaimer(), {});
+  window.__subjects = ()=> NAV.push(()=>subjects(), {});
+  window.__topics = (code,name)=> NAV.push(()=>topics(code,name), {});
+  window.__topicIntro = (code,topic)=> NAV.push(()=>topicIntro(code,topic), {});
+  window.__topicCount = (code,topic)=> NAV.push(()=>topicCount(code,topic), {});
+  window.__startFullMock = ()=> NAV.push(()=>startFullMock(), {});
+  window.__subjectConfirm = (code,name)=> NAV.push(()=>subjectConfirm(code,name), {});
+  window.__startSubjectTest = (code)=> NAV.push(()=>startSubjectTest(code), {});
+  window.__startTopicTest = (code,topic,count)=> NAV.push(()=>startTopicTest(code,topic,count), {});
+  window.__select = (i)=> selectOpt(i);
+  window.__prev = ()=> prevQ();
+  window.__next = ()=> nextQ();
+  window.__jump = (i)=> jump(i);
+  window.__submit = ()=> submitExam(false);
+  window.__more = ()=> NAV.push(()=>moreQuestions(), {});
+  window.__reviewWrong = ()=> NAV.push(()=>reviewWrong(), {});
+  window.__dashboard = ()=> NAV.push(()=>dashboard(), {});
+  window.__login = ()=> login();
+
+  // ===================== INIT =====================
+  home();
+  renderHeader();
+
+</script>
+
+</body>
+</html>
