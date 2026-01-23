@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Fix Marks (Admin)</title>
+  <style>
+    body{font-family:Arial;background:#f4f7ff;margin:0;padding:20px}
+    .box{max-width:900px;margin:auto;background:white;padding:20px;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.08)}
+    h2{margin:0 0 10px}
+    button{
+      padding:12px 16px;border:none;border-radius:10px;
+      background:#0b4dbb;color:white;font-size:16px;cursor:pointer;margin-right:10px
+    }
+    button:disabled{opacity:.5;cursor:not-allowed}
+    pre{background:#0f172a;color:#e2e8f0;padding:14px;border-radius:12px;overflow:auto;max-height:400px}
+    .small{color:#555;font-size:14px}
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>Fix Marks in Firestore (One-Time)</h2>
+    <p class="small">
+      This will add <b>marks</b> field to all questions that don't have it.<br/>
+      Default rule: <b>GA = 1 mark</b>, other subjects = <b>2 marks</b> (you can change below).
+    </p>
+
+    <button id="runBtn">Run Fix Now</button>
+    <button id="runOnlyMissingBtn">Run Only Missing Marks</button>
+
+    <pre id="log">Ready...</pre>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      updateDoc,
+      writeBatch
+    } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+    // ✅ Your Firebase Config
+    const firebaseConfig = {
+      apiKey: "AIzaSyC_f6lvDO9LeSE22kv4HIhWLj846bmRla8",
+      authDomain: "gate-ec-mock.firebaseapp.com",
+      projectId: "gate-ec-mock",
+      storageBucket: "gate-ec-mock.firebasestorage.app",
+      messagingSenderId: "668980846025",
+      appId: "1:668980846025:web:a960f983f2e6311fad1c18"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const logBox = document.getElementById("log");
+    const runBtn = document.getElementById("runBtn");
+    const runOnlyMissingBtn = document.getElementById("runOnlyMissingBtn");
+
+    function log(msg){
+      logBox.textContent += "\n" + msg;
+      logBox.scrollTop = logBox.scrollHeight;
+    }
+
+    // ✅ Rule: GA = 1, Others = 2
+    function getMarksForSubject(subject){
+      if(!subject) return 1;
+      const s = subject.toUpperCase().trim();
+      if(s === "GA") return 1;
+      return 2;
+    }
+
+    async function fixMarks(onlyMissing=true){
+      logBox.textContent = "Starting...\n";
+
+      runBtn.disabled = true;
+      runOnlyMissingBtn.disabled = true;
+
+      try{
+        const snap = await getDocs(collection(db, "questions"));
+        log(`Total docs found: ${snap.size}`);
+
+        let updated = 0;
+        let skipped = 0;
+
+        // Firestore batch limit = 500 writes
+        let batch = writeBatch(db);
+        let batchCount = 0;
+
+        for(const d of snap.docs){
+          const data = d.data();
+
+          const hasMarks = Object.prototype.hasOwnProperty.call(data, "marks");
+          if(onlyMissing && hasMarks){
+            skipped++;
+            continue;
+          }
+
+          const subject = data.subject || "";
+          const marks = getMarksForSubject(subject);
+
+          const ref = doc(db, "questions", d.id);
+          batch.update(ref, { marks });
+
+          updated++;
+          batchCount++;
+
+          // commit batch every 450 (safe)
+          if(batchCount >= 450){
+            await batch.commit();
+            batch = writeBatch(db);
+            batchCount = 0;
+            log(`Committed 450 updates...`);
+          }
+        }
+
+        // commit remaining
+        if(batchCount > 0){
+          await batch.commit();
+        }
+
+        log(`✅ Updated docs: ${updated}`);
+        log(`⏭️ Skipped docs: ${skipped}`);
+        log(`DONE ✅`);
+      }catch(e){
+        log(`❌ ERROR: ${e.message}`);
+      }
+
+      runBtn.disabled = false;
+      runOnlyMissingBtn.disabled = false;
+    }
+
+    runBtn.addEventListener("click", () => fixMarks(false)); // force rewrite all
+    runOnlyMissingBtn.addEventListener("click", () => fixMarks(true)); // only missing
+  </script>
+</body>
+</html>
