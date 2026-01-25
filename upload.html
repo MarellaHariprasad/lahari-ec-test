@@ -49,11 +49,23 @@
     .err { color: #b00020; }
     .small { font-size: 12px; color: #555; margin-top: 6px; }
     code { background: #f1f1f1; padding: 2px 6px; border-radius: 6px; }
+    .logBox{
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 12px;
+      background: #fff7e6;
+      border: 1px solid #ffd59e;
+      font-size: 13px;
+      max-height: 200px;
+      overflow:auto;
+      display:none;
+      white-space: pre-wrap;
+    }
   </style>
 </head>
 
 <body>
-  <div class="topbar">Bulk Upload (Admin) – Auto Marks Enabled</div>
+  <div class="topbar">Bulk Upload (Admin) – Smart Cleaner Enabled ✅</div>
 
   <div class="container">
 
@@ -63,11 +75,15 @@
         1) Paste <b>JSON array</b> below<br/>
         2) Click <b>Upload to Firebase</b><br/>
         3) It will add docs into Firestore collection: <code>questions</code><br/><br/>
-        ✅ <b>Permanent Feature:</b> If <code>marks</code> is missing, it will auto add:
+
+        ✅ <b>Auto Fix Enabled:</b>
         <ul>
-          <li><b>GA</b> → <b>1 mark</b></li>
-          <li><b>All other subjects</b> → <b>2 marks</b></li>
+          <li>Options > 4 → first 4 will be used</li>
+          <li>Answer "2" → converts to 2</li>
+          <li>Answer "B" → converts to 1</li>
+          <li>Auto adds marks if missing</li>
         </ul>
+
         <div class="small">
           Format required:<br/>
           <code>
@@ -82,11 +98,11 @@
 
       <textarea id="jsonBox" placeholder='[
   {
-    "subject": "GA",
-    "topic": "Averages",
-    "question": "The average of 5 numbers is 18. If one number is removed, average becomes 16. Removed number is:",
-    "options": ["20","24","26","28"],
-    "answer": 2
+    "subject": "EDC",
+    "topic": "CMOS Basics",
+    "question": "In CMOS, when input is LOW, PMOS is:",
+    "options": ["ON","OFF","Always conducting","Always cutoff"],
+    "answer": 0
   }
 ]'></textarea>
 
@@ -97,6 +113,7 @@
       </div>
 
       <div class="status" id="status"></div>
+      <div class="logBox" id="logBox"></div>
     </div>
 
   </div>
@@ -122,6 +139,7 @@
     const backBtn = document.getElementById("backBtn");
     const clearBtn = document.getElementById("clearBtn");
     const statusEl = document.getElementById("status");
+    const logBox = document.getElementById("logBox");
 
     function autoMarks(subject){
       const s = (subject || "").toUpperCase().trim();
@@ -129,10 +147,66 @@
       return 2;
     }
 
+    function normalizeAnswer(ans){
+      // number -> ok
+      if (typeof ans === "number" && ans >= 0 && ans <= 3) return ans;
+
+      // "2" -> 2
+      if (typeof ans === "string") {
+        const t = ans.trim().toUpperCase();
+
+        if (t === "A") return 0;
+        if (t === "B") return 1;
+        if (t === "C") return 2;
+        if (t === "D") return 3;
+
+        const n = Number(t);
+        if (!Number.isNaN(n) && n >= 0 && n <= 3) return n;
+      }
+
+      return null;
+    }
+
+    function cleanQuestion(q){
+      if(!q || typeof q !== "object") return { ok:false, reason:"Not an object" };
+
+      q.subject = (q.subject ?? "").toString().trim();
+      q.topic = (q.topic ?? "").toString().trim();
+      q.question = (q.question ?? "").toString().trim();
+
+      if(!q.subject) return { ok:false, reason:"Missing subject" };
+      if(!q.topic) return { ok:false, reason:"Missing topic" };
+      if(!q.question) return { ok:false, reason:"Missing question" };
+
+      if(!Array.isArray(q.options)) return { ok:false, reason:"options is not array" };
+
+      // trim options
+      q.options = q.options.map(x => (x ?? "").toString().trim()).filter(Boolean);
+
+      if(q.options.length < 4) return { ok:false, reason:"Less than 4 options" };
+
+      // if more than 4, take first 4
+      if(q.options.length > 4) q.options = q.options.slice(0,4);
+
+      // answer normalize
+      const fixedAnswer = normalizeAnswer(q.answer);
+      if(fixedAnswer === null) return { ok:false, reason:"Invalid answer format" };
+      q.answer = fixedAnswer;
+
+      // auto marks
+      if (q.marks === undefined || q.marks === null) {
+        q.marks = autoMarks(q.subject);
+      }
+
+      return { ok:true, q };
+    }
+
     clearBtn.addEventListener("click", () => {
       jsonBox.value = "";
       statusEl.innerHTML = "";
       statusEl.className = "status";
+      logBox.style.display = "none";
+      logBox.textContent = "";
     });
 
     backBtn.addEventListener("click", () => {
@@ -142,6 +216,8 @@
     uploadBtn.addEventListener("click", async () => {
       statusEl.className = "status";
       statusEl.innerHTML = "⏳ Uploading...";
+      logBox.style.display = "none";
+      logBox.textContent = "";
 
       try {
         const text = jsonBox.value.trim();
@@ -167,38 +243,19 @@
 
         let added = 0;
         let skipped = 0;
+        let logs = [];
 
         for (let i = 0; i < arr.length; i++) {
-          const q = arr[i];
+          const raw = arr[i];
+          const res = cleanQuestion(raw);
 
-          // Basic validation
-          const isValid =
-            q &&
-            typeof q.subject === "string" &&
-            typeof q.topic === "string" &&
-            typeof q.question === "string" &&
-            Array.isArray(q.options) &&
-            q.options.length === 4 &&
-            typeof q.answer === "number" &&
-            q.answer >= 0 && q.answer <= 3;
-
-          if (!isValid) {
+          if (!res.ok) {
             skipped++;
+            logs.push(`❌ Skipped #${i+1}: ${res.reason}`);
             continue;
           }
 
-          // Clean strings
-          q.subject = q.subject.trim();
-          q.topic = q.topic.trim();
-          q.question = q.question.trim();
-
-          // ✅ Permanent auto marks
-          if (q.marks === undefined || q.marks === null) {
-            q.marks = autoMarks(q.subject);
-          }
-
-          // Upload
-          await addDoc(collection(db, "questions"), q);
+          await addDoc(collection(db, "questions"), res.q);
           added++;
 
           statusEl.className = "status";
@@ -208,7 +265,12 @@
         statusEl.className = "status ok";
         statusEl.innerHTML =
           `✅ Upload Success! Added ${added} questions` +
-          (skipped > 0 ? ` | Skipped ${skipped} invalid items` : "");
+          (skipped > 0 ? ` | Skipped ${skipped}` : "");
+
+        if (skipped > 0) {
+          logBox.style.display = "block";
+          logBox.textContent = logs.join("\n");
+        }
 
       } catch (err) {
         statusEl.className = "status err";
